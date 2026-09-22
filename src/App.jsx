@@ -7,9 +7,7 @@ import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { AppScreen, Avatar, BackTitle, Brand, Button, Field, Phone } from './components.jsx'
 import { professionals, services } from './data.js'
 
-const DEMO_EMAIL = 'teste@sibel.com'
-const DEMO_PASSWORD = '123456'
-const DEMO_SESSION_KEY = 'sibel_demo_session'
+import { currentUser, initials, loginAccount, logout, registerAccount, updateName } from './local-auth.js'
 
 function Splash() {
   const navigate = useNavigate()
@@ -33,16 +31,18 @@ function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
 
-  function handleLogin(event) {
+  const [busy, setBusy] = useState(false)
+  async function handleLogin(event) {
     event.preventDefault()
-
-    if (email.trim().toLowerCase() !== DEMO_EMAIL || password !== DEMO_PASSWORD) {
-      setError('Email ou senha incorretos. Use os dados de acesso para teste.')
-      return
+    setBusy(true)
+    try {
+      await loginAccount(email, password)
+      navigate('/home', { replace: true })
+    } catch (error) {
+      setError(error.message)
+    } finally {
+      setBusy(false)
     }
-
-    window.localStorage.setItem(DEMO_SESSION_KEY, 'authenticated')
-    navigate('/home')
   }
 
   return (
@@ -54,12 +54,7 @@ function Login() {
           <Field type="password" aria-label="Senha" placeholder="Senha" value={password} onChange={(event) => { setPassword(event.target.value); setError('') }} autoComplete="current-password" required />
           {error && <p className="login-error" role="alert">{error}</p>}
           <p className="auth-link">Esqueceu a senha? <button type="button" onClick={() => navigate('/recuperar-senha')}>Clique aqui</button></p>
-          <Button type="submit">Entrar</Button>
-          <aside className="demo-access">
-            <strong>Acesso para teste</strong>
-            <span>Email: {DEMO_EMAIL}</span>
-            <span>Senha: {DEMO_PASSWORD}</span>
-          </aside>
+          <Button type="submit" disabled={busy}>{busy ? 'Entrando…' : 'Entrar'}</Button>
           <p className="signup-link">Não possui uma conta?<button type="button" onClick={() => navigate('/cadastro')}>Clique Aqui</button></p>
         </form>
       </div>
@@ -68,23 +63,38 @@ function Login() {
 }
 
 function ProtectedRoute({ children }) {
-  const authenticated = window.localStorage.getItem(DEMO_SESSION_KEY) === 'authenticated'
+  const authenticated = currentUser()
   return authenticated ? children : <Navigate to="/login" replace />
 }
 
 function Register() {
   const navigate = useNavigate()
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  async function handleRegister(event) {
+    event.preventDefault()
+    const data = Object.fromEntries(new FormData(event.currentTarget))
+    setError('')
+    setBusy(true)
+    try {
+      await registerAccount(data)
+      navigate('/login', { replace: true })
+    } catch (error) { setError(error.message) }
+    finally { setBusy(false) }
+  }
   return (
     <Phone auth>
       <div className="auth-page form-page">
         <Brand compact />
         <BackTitle>Cadastro</BackTitle>
-        <form onSubmit={(event) => { event.preventDefault(); navigate('/login') }}>
-          <Field label="Nome" placeholder="Nome" required />
-          <Field label="Email" type="email" placeholder="sibel@gmail.com" required />
-          <Field label="Senha" type="password" placeholder="••••••" required />
-          <Field label="Confirmar senha" type="password" placeholder="••••••" required />
-          <Button type="submit">Confirmar cadastro</Button>
+        <form onSubmit={handleRegister}>
+          <Field label="Nome" name="name" placeholder="Nome" autoComplete="name" required />
+          <Field label="Email" name="email" type="email" placeholder="Email" autoComplete="email" required />
+          <Field label="Senha" name="password" type="password" placeholder="••••••" minLength={6} autoComplete="new-password" required />
+          <Field label="Confirmar senha" name="confirmation" type="password" placeholder="••••••" minLength={6} autoComplete="new-password" required />
+          {error && <p className="login-error" role="alert">{error}</p>}
+          <small>Cadastro local neste navegador. Não use uma senha real.</small>
+          <Button type="submit" disabled={busy}>{busy ? 'Cadastrando…' : 'Confirmar cadastro'}</Button>
         </form>
       </div>
     </Phone>
@@ -127,13 +137,14 @@ function NewPassword() {
 
 function Home() {
   const navigate = useNavigate()
+  const user = currentUser()
   return (
     <AppScreen className="home-page">
       <header className="home-header">
         <strong>SIBEL</strong>
-        <button className="mini-avatar" onClick={() => navigate('/perfil')} aria-label="Abrir perfil">JG</button>
+        <button className="mini-avatar" onClick={() => navigate('/perfil')} aria-label="Abrir perfil">{initials(user.name)}</button>
       </header>
-      <section className="greeting"><span>Olá,</span><h2>Juliana</h2></section>
+      <section className="greeting"><span>Olá,</span><h2>{user.name}</h2></section>
       <section className="schedule-card">
         <h3>Agendar horário</h3><p>Escolha seu serviço.</p>
         <div className="schedule-picks"><span><CalendarDays size={16} />Hoje, 18 Out</span><span><Clock3 size={16} />Qualquer hora</span></div>
@@ -250,13 +261,23 @@ function Success() {
 
 function Profile() {
   const [tab, setTab] = useState('Meus dados')
+  const [user, setUser] = useState(currentUser)
+  const [message, setMessage] = useState('')
+  const navigate = useNavigate()
+  function saveProfile(event) {
+    event.preventDefault()
+    try {
+      setUser(updateName(new FormData(event.currentTarget).get('name')))
+      setMessage('Nome atualizado.')
+    } catch (error) { setMessage(error.message) }
+  }
   const tabs = ['Meus dados', 'Endereço', 'Segurança', 'Aparência']
   return (
     <AppScreen className="profile-page">
       <BackTitle>Perfil</BackTitle>
-      <div className="profile-identity"><span className="profile-avatar">GC</span><h2>Guilherme Campos</h2><p>guilherme@gmail.com</p></div>
+      <div className="profile-identity"><span className="profile-avatar">{initials(user.name)}</span><h2>{user.name}</h2><p>{user.email}</p></div>
       <div className="profile-tabs">{tabs.map(item => <button className={tab === item ? 'active' : ''} onClick={() => setTab(item)} key={item}>{item}</button>)}</div>
-      {tab === 'Meus dados' && <form className="profile-form"><h3>Meus dados</h3><Field label="Nome*" defaultValue="Guilherme Campos" /><Field label="Data nascimento (opcional)" placeholder="Informe a data" /><Field label="Celular*" defaultValue="+55 85 9 9435-6543" /><fieldset><legend>Gênero (opcional)</legend>{['Feminino', 'Masculino', 'Outros'].map(item => <label key={item}><input type="radio" name="gender" />{item}</label>)}</fieldset><Button>Salvar</Button><Button secondary>Excluir conta</Button></form>}
+      {tab === 'Meus dados' && <form className="profile-form" onSubmit={saveProfile}><h3>Meus dados</h3><Field label="Nome*" name="name" defaultValue={user.name} required /><Field label="Email" value={user.email} readOnly /><Field label="Data nascimento (opcional)" placeholder="Informe a data" /><Field label="Celular" placeholder="Informe seu celular" /><fieldset><legend>Gênero (opcional)</legend>{['Feminino', 'Masculino', 'Outros'].map(item => <label key={item}><input type="radio" name="gender" />{item}</label>)}</fieldset><small>Nesta etapa, apenas o nome é salvo.</small><p role="status">{message}</p><Button type="submit">Salvar</Button><Button secondary type="button" onClick={() => { logout(); navigate('/login', { replace: true }) }}>Sair</Button></form>}
       {tab === 'Endereço' && <form className="profile-form"><h3>Endereço</h3><Field label="CEP" placeholder="00000-000" /><Field label="Rua" placeholder="Nome da rua" /><Field label="Número" placeholder="Número" /><Button>Salvar endereço</Button></form>}
       {tab === 'Segurança' && <form className="profile-form"><h3>Segurança</h3><Field label="Senha atual*" type="password" placeholder="Senha atual" /><Field label="Nova senha*" type="password" placeholder="Nova senha" /><Field label="Confirmação de senha*" type="password" placeholder="Confirmação de senha" /><Button>Salvar</Button></form>}
       {tab === 'Aparência' && <section className="appearance-card"><h3>Aparência</h3><p>Escolha o estilo visual do aplicativo.</p><button className="theme-preview active"><i />Tema Sibel</button></section>}

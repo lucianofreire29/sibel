@@ -9,12 +9,14 @@ npm install
 npm run dev
 ```
 
-## Acesso temporário para teste
+## Cadastro local (antes do Firebase)
 
-- Email: `teste@sibel.com`
-- Senha: `123456`
+- Crie uma conta na tela de cadastro; depois entre com o email e a senha cadastrados.
+- Nome, email e verificador de senha com salt/PBKDF2 são guardados neste navegador. A senha não é armazenada em texto puro.
+- A sessão usa sessionStorage. O perfil permite salvar o nome e sair da conta.
+- O nome da conta aparece na Home e no perfil, inclusive depois de atualizado.
 
-Esse acesso é validado somente no navegador e será substituído pela autenticação do Firebase.
+Isto é apenas um protótipo local: não protege dados em produção, não sincroniza dispositivos e não substitui Firebase Authentication. Não utilize senhas ou dados reais. Recuperação por email e as demais abas do perfil continuam como telas demonstrativas, sem integração.
 
 ## Rotas principais
 
