@@ -107,7 +107,9 @@ button, input, textarea { outline-color: var(--accent); }
 .main-button--secondary { background: transparent; border: 1px solid var(--primary); color: var(--primary); box-shadow: none; }
 .main-button--secondary:hover { background: rgba(74, 44, 32, .08); }
 .login-page .main-button, .form-page .main-button, .recover-page .main-button { align-self: center; width: 249px; min-height: 58px; font-size: 16px; }
-.login-page .loading { margin-top: 114px; }
+.login-error { margin: -5px 0 -5px; color: #8b1d1d; text-align: center; font-size: 12px; line-height: 1.4; }
+.demo-access { align-self: center; width: 249px; padding: 10px 14px; border: 1px solid rgba(74, 44, 32, .2); border-radius: 9px; display: grid; gap: 3px; color: var(--text); background: rgba(244, 233, 225, .62); font-size: 11px; line-height: 1.4; }
+.demo-access strong { margin-bottom: 2px; color: var(--primary); font-size: 12px; }
 
 .form-page { padding: 18px 28px 24px; }
 .form-page .brand { transform: scale(.74); transform-origin: top center; height: 190px; }
@@ -248,7 +250,6 @@ button, input, textarea { outline-color: var(--accent); }
 @media (max-height: 760px) {
   .auth-page { padding-top: 22px; }
   .login-page .brand { transform: scale(.78); transform-origin: top center; height: 190px; margin-bottom: 0; }
-  .login-page .loading { margin-top: 36px; }
   .form-page .brand, .recover-page .brand { height: 155px; transform: scale(.62); }
   .form-page .field-control { min-height: 42px; }
   .form-page form { gap: 8px; }
@@ -258,4 +259,3 @@ button, input, textarea { outline-color: var(--accent); }
   body { padding: 24px; }
   .phone { border-radius: 26px; border: 8px solid #17110f; }
 }
-

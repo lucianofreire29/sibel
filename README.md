@@ -9,6 +9,13 @@ npm install
 npm run dev
 ```
 
+## Acesso temporário para teste
+
+- Email: `teste@sibel.com`
+- Senha: `123456`
+
+Esse acesso é validado somente no navegador e será substituído pela autenticação do Firebase.
+
 ## Rotas principais
 
 - `/` — apresentação

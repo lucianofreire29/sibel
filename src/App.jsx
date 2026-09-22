@@ -7,6 +7,10 @@ import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { AppScreen, Avatar, BackTitle, Brand, Button, Field, Phone } from './components.jsx'
 import { professionals, services } from './data.js'
 
+const DEMO_EMAIL = 'teste@sibel.com'
+const DEMO_PASSWORD = '123456'
+const DEMO_SESSION_KEY = 'sibel_demo_session'
+
 function Splash() {
   const navigate = useNavigate()
   useEffect(() => {
@@ -25,21 +29,47 @@ function Splash() {
 
 function Login() {
   const navigate = useNavigate()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+
+  function handleLogin(event) {
+    event.preventDefault()
+
+    if (email.trim().toLowerCase() !== DEMO_EMAIL || password !== DEMO_PASSWORD) {
+      setError('Email ou senha incorretos. Use os dados de acesso para teste.')
+      return
+    }
+
+    window.localStorage.setItem(DEMO_SESSION_KEY, 'authenticated')
+    navigate('/home')
+  }
+
   return (
     <Phone auth>
       <div className="auth-page login-page">
         <Brand compact />
-        <form onSubmit={(event) => { event.preventDefault(); navigate('/home') }}>
-          <Field type="email" aria-label="Email" placeholder="sibel@gmail.com" required />
-          <Field type="password" aria-label="Senha" placeholder="••••••" required />
+        <form onSubmit={handleLogin}>
+          <Field type="email" aria-label="Email" placeholder="Email" value={email} onChange={(event) => { setEmail(event.target.value); setError('') }} autoComplete="email" required />
+          <Field type="password" aria-label="Senha" placeholder="Senha" value={password} onChange={(event) => { setPassword(event.target.value); setError('') }} autoComplete="current-password" required />
+          {error && <p className="login-error" role="alert">{error}</p>}
           <p className="auth-link">Esqueceu a senha? <button type="button" onClick={() => navigate('/recuperar-senha')}>Clique aqui</button></p>
           <Button type="submit">Entrar</Button>
+          <aside className="demo-access">
+            <strong>Acesso para teste</strong>
+            <span>Email: {DEMO_EMAIL}</span>
+            <span>Senha: {DEMO_PASSWORD}</span>
+          </aside>
           <p className="signup-link">Não possui uma conta?<button type="button" onClick={() => navigate('/cadastro')}>Clique Aqui</button></p>
         </form>
-        <span className="loading"><i /></span>
       </div>
     </Phone>
   )
+}
+
+function ProtectedRoute({ children }) {
+  const authenticated = window.localStorage.getItem(DEMO_SESSION_KEY) === 'authenticated'
+  return authenticated ? children : <Navigate to="/login" replace />
 }
 
 function Register() {
@@ -242,15 +272,14 @@ export default function App() {
       <Route path="/cadastro" element={<Register />} />
       <Route path="/recuperar-senha" element={<RecoverPassword />} />
       <Route path="/nova-senha" element={<NewPassword />} />
-      <Route path="/home" element={<Home />} />
-      <Route path="/profissionais" element={<Professionals />} />
-      <Route path="/servicos" element={<Services />} />
-      <Route path="/agendamento" element={<Scheduling />} />
-      <Route path="/confirmar" element={<ConfirmAppointment />} />
-      <Route path="/sucesso" element={<Success />} />
-      <Route path="/perfil" element={<Profile />} />
+      <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+      <Route path="/profissionais" element={<ProtectedRoute><Professionals /></ProtectedRoute>} />
+      <Route path="/servicos" element={<ProtectedRoute><Services /></ProtectedRoute>} />
+      <Route path="/agendamento" element={<ProtectedRoute><Scheduling /></ProtectedRoute>} />
+      <Route path="/confirmar" element={<ProtectedRoute><ConfirmAppointment /></ProtectedRoute>} />
+      <Route path="/sucesso" element={<ProtectedRoute><Success /></ProtectedRoute>} />
+      <Route path="/perfil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }
-
